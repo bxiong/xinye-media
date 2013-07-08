@@ -25,6 +25,7 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback {
     Camera.Size mPreviewSize;
     List<Camera.Size> mSupportedPreviewSizes;
     Camera mCamera;
+    private PreviewSizeChangedCallback mPreviewSizeChangedCallback = null;
 
     public CameraPreview(Context context) {
         super(context);
@@ -67,11 +68,24 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback {
         } catch (IOException exception) {
             Log.e(TAG, "IOException caused by setPreviewDisplay()", exception);
         }
+
+        if (mSupportedPreviewSizes != null) {
+            mPreviewSize = getOptimalPreviewSize(mSupportedPreviewSizes,
+                    getMeasuredWidth(), getMeasuredHeight());
+        }
+
         Camera.Parameters parameters = camera.getParameters();
         parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
         requestLayout();// 请求重新布局
 
-        camera.setParameters(parameters);
+        try
+        {
+            camera.setParameters(parameters);
+        }
+        catch (RuntimeException e)
+        {
+            Log.e(TAG, "error setting parameters", e);
+        }
     }
 
     /**
@@ -186,6 +200,18 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback {
 
         mCamera.setParameters(parameters);
         mCamera.startPreview();
+
+        if (mPreviewSizeChangedCallback != null) {
+            mPreviewSizeChangedCallback.previewSizeChanged();
+        }
+    }
+
+    public void setPreviewSizeChangedCallback(PreviewSizeChangedCallback callback) {
+        mPreviewSizeChangedCallback = callback;
+    }
+
+    public interface PreviewSizeChangedCallback {
+        void previewSizeChanged();
     }
 
 }
